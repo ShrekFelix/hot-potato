@@ -1,17 +1,14 @@
 #include "potato.h"
-#include <netdb.h>
-#include <stdlib.h>
 
 int main(int argc, char *argv[]){
     if(argc != 3){
         perror("USAGE: ./player <machine_name> <port_num>.\n");
         return EXIT_FAILURE;
     }
-    const char* hostname = argv[1];
-    const char* portn = argv[2];
+    const char* master_ip = argv[1];
+    const char* master_port = argv[2];
 
-    int status;
-    int socket_fd;
+    int master_fd;
     struct addrinfo hints;
     struct addrinfo * hints_list;
 
@@ -19,36 +16,64 @@ int main(int argc, char *argv[]){
     hints.ai_family   = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    status = getaddrinfo(hostname, portn, &hints, &hints_list);
-    if (status != 0){
+    if (getaddrinfo(master_ip, master_port, &hints, &hints_list) != 0){
         perror("Error: cannot get address info for host\n");
         return EXIT_FAILURE;
     }
 
-    socket_fd = socket(
+    master_fd = socket(
         hints_list->ai_family, 
         hints_list->ai_socktype, 
         hints_list->ai_protocol
     );
-    if (socket_fd == -1){
+    if (master_fd == -1){
         perror("Error: cannot create socket\n");
         return EXIT_FAILURE;
     }
 
-    status = connect(socket_fd, hints_list->ai_addr, hints_list->ai_addrlen);
-    if (status == -1){
+    if (connect(master_fd, hints_list->ai_addr, hints_list->ai_addrlen) == -1){
         perror("Error: cannot connect to socket\n");
         return EXIT_FAILURE;
     }
 
-    send_int(socket_fd, hints_list->ai_family);
-    send_int(socket_fd, hints_list->ai_socktype);
-    send_int(socket_fd, hints_list->ai_protocol);
+    send_int(master_fd, hints_list->ai_family);
+    send_int(master_fd, hints_list->ai_socktype);
+    send_int(master_fd, hints_list->ai_protocol);
     int id;
-    recv_int(socket_fd, &id);
+    recv_int(master_fd, &id);
+    int nplayers;
+    recv_int(master_fd, &nplayers);
+    printf("Connected as player %d out of %d total players\n", id, nplayers);
+
+    // ackowledge neighbours
+    int left_fd;
+    int right_fd;
+    recv_int(master_fd, &left_fd);
+    recv_int(master_fd, &right_fd);
+
+
+    // establish server for neighbours
+    const char* player_ip = argv[1];
+    const char* player_port = argv[2];
+    if (getaddrinfo(player_ip, player_port, &hints, &hints_list) != 0){
+        perror("Error: cannot get address info for host\n");
+        return EXIT_FAILURE;
+    }
+
+    master_fd = socket(
+        hints_list->ai_family, 
+        hints_list->ai_socktype, 
+        hints_list->ai_protocol
+    );
+    if (master_fd == -1){
+        perror("Error: cannot create socket\n");
+        return EXIT_FAILURE;
+    }
+
+
 
     freeaddrinfo(hints_list);
-    close(socket_fd);
+    close(master_fd);
 
 
 

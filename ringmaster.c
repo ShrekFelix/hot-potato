@@ -1,7 +1,5 @@
 #include "potato.h"
-#include <netdb.h>
 #include <time.h>
-#include <stdlib.h>
 
 int main(int argc, char *argv[]){
     // parse input
@@ -65,7 +63,7 @@ int main(int argc, char *argv[]){
 
     printf("Waiting for connection on port\n");
 
-    int ids[nplayers];
+    int client_fds[nplayers];
     int domains[nplayers];
     int types[nplayers];
     int protocols[nplayers];
@@ -79,28 +77,33 @@ int main(int argc, char *argv[]){
             perror("Error accept\n");
             return EXIT_FAILURE;
         }
-        ids[i] = client_fd;
+        client_fds[i] = client_fd;
         recv_int(client_fd, &domains[i]);
         recv_int(client_fd, &types[i]);
         recv_int(client_fd, &protocols[i]);
         printf("Player %d is ready to play\n", i);
         send_int(client_fd, i);
+        send_int(client_fd, nplayers);
     }
-    /*
-    // send neighbours to each player
-    for(int i=0; i<nplayers; i++){
+    // tell neighbours
+    send_int(client_fds[0], client_fds[nplayers-1]);
+    send_int(client_fds[0], client_fds[1]);
+    for(int i=1; i<nplayers; i++){
+        send_int(client_fds[i], client_fds[i-1]);
+        send_int(client_fds[i], client_fds[i+1]);
+    }
 
-    }
-    // initialize ptt
+    // initialize potato
     Potato* ptt;
+    ptt->head = NULL;
     ptt->tail = NULL;
     ptt->nhops = nhops;
     // send to a random client
     srand( (unsigned int) time(NULL));
     int randn = rand() % nplayers;
-    send(ids[randn], ptt, sizeof(ptt), 0);
+    send(client_fds[randn], ptt, sizeof(ptt), 0);
 
-    */
+    
 
     freeaddrinfo(hints_list);
     close(socket_fd);
