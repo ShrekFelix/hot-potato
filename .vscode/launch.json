@@ -5,12 +5,25 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(lldb) Launch",
+            "name": "(lldb) player",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/player",
+            "args": ["localhost", "4444"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "lldb"
+        },
+
+        {
+            "name": "(lldb) ringmaster",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/ringmaster",
             "args": ["4444","2","2"],
-            "stopAtEntry": false,
+            "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": true,
