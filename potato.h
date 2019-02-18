@@ -94,7 +94,7 @@ typedef struct _Potato{
 } Potato;
 
 void send_str(int fd, char * src){
-    if(send(fd, &src, sizeof(src), 0) == -1){
+    if(send(fd, src, 512, 0) == -1){
         perror("Error: send\n");
     }
 }

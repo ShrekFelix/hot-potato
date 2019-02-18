@@ -40,9 +40,9 @@ int main(int argc, char *argv[]){
         player_fds[i] = player_fd;
         bzero(player_addrs[i], 512);
         bzero(player_ports[i], 512);
-        recv(player_fd, player_addrs[i], 512, 0);
+        recv_str(player_fd, player_addrs[i]);
         printf("player %d addr: %s\n", i,player_addrs[i]);
-        recv(player_fd, player_ports[i], 512, 0);
+        recv_str(player_fd, player_ports[i]);
         printf("player %d ip: %s\n", i,player_ports[i]);
         send_int(player_fd, i);
         send_int(player_fd, nplayers);
