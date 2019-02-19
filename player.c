@@ -10,11 +10,10 @@ int main(int argc, char *argv[]){
     const char* master_port = argv[2];
     int master_fd = open_clientfd(master_addr, master_port);
     // player socket
-    char *player_port;
+    char player_port[512];
     int player_listen_fd;
     for(int i=8000; i<9999; ++i){
         sprintf(player_port, "%d", i);
-        //player_port = itoa(i);
         player_listen_fd = open_listenfd(player_port);
         if(player_listen_fd < 0){
             continue;
