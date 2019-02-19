@@ -20,7 +20,6 @@ int main(int argc, char *argv[]){
     }
     printf("Potato Ringmaster\nPlayers = %d\nHops = %d\n", nplayers, nhops);
     int master_listen_fd = open_listenfd(port);
-    printf("Waiting for connection on port\n");
 
     int player_conn_fds[nplayers];
     char player_addrs[nplayers][512];
@@ -32,8 +31,7 @@ int main(int argc, char *argv[]){
     for(int i=0; i<nplayers; i++){
         player_conn_fd = accept(master_listen_fd, (struct sockaddr *)&socket_addr, &socket_addr_len); // blocks until connection
         if (player_conn_fd == -1) {
-            printf("%s\n",strerror(errno));
-            perror("Error accept\n");
+            perror("accept()");
             return EXIT_FAILURE;
         }
         player_conn_fds[i] = player_conn_fd;
@@ -61,43 +59,54 @@ int main(int argc, char *argv[]){
     send_str(player_conn_fds[nplayers-1], player_addrs[0]);
     send_str(player_conn_fds[nplayers-1], player_ports[0]);
 
-    if(nhops == 0){
-        return EXIT_SUCCESS;
-    }
-
     int trace_len = 0;
     int trace[512] = {0};
     fd_set rd;
     int r;
     int in_fd;
     int out_fd;
-    srand( (unsigned int) time(NULL));
+    srand( (unsigned int) time(NULL) + nplayers);
+
+    if(nhops == 0){ // shutdown immediately
+        for(int i=0; i<nplayers; ++i){
+            out_fd = player_conn_fds[i];
+            SHUTDOWN;
+            // send_int(out_fd, -100);
+            // send_int(out_fd, trace_len);
+            // send_trace(out_fd, trace);
+        }
+        return EXIT_SUCCESS;
+    }
+    
     int randn = rand() % nplayers;
     printf("Ready to start the game, sending potato to player %d\n", randn);
     out_fd = player_conn_fds[randn];
-    send_int(out_fd, nhops);
-    send_int(out_fd, trace_len);
-    if(send(out_fd, trace, 512*sizeof(int), 0) != 512*sizeof(int)) perror("error sending trace");
+    TOSS_PTT;
+    // send_int(out_fd, nhops);
+    // send_int(out_fd, trace_len);
+    // send_trace(out_fd, trace);
     FD_ZERO(&rd);
     for(int i=0; i<nplayers; ++i){
         FD_SET(player_conn_fds[i], &rd);
     }
     r = select(player_conn_fds[nplayers-1]+1, &rd, NULL, NULL, NULL);
     if(r<0){
-        perror("Error: select\n");
+        perror("select()");
         return EXIT_FAILURE;
     }
     for(int i=0; i<nplayers; ++i){
         if(FD_ISSET(player_conn_fds[i], &rd)){
             in_fd = player_conn_fds[i];
-            trace_len = recv_int(in_fd);
-            if(recv(in_fd, trace, 512*sizeof(int), 0) != 512*sizeof(int)) perror("error recving trace");
+            CATCH_PTT;
+            // trace_len = recv_int(in_fd);
+            // recv_trace(in_fd, trace);
         }else{
             // signal others to shutdown
             out_fd = player_conn_fds[i];
-            send_int(out_fd, -513);
-            send_int(out_fd, trace_len);
-            if(send(out_fd, trace, 512*sizeof(int), 0) != 512*sizeof(int)) perror("error sending trace");
+            SHUTDOWN;
+            // send_int(out_fd, -100);
+            // send_int(out_fd, trace_len);
+            // send_trace(out_fd, trace);
         }
     }
     printf("Trace of potato:\n");
@@ -105,13 +114,7 @@ int main(int argc, char *argv[]){
         printf("%d,",trace[i]);
     }
     printf("%d\n",trace[trace_len-1]);
-    //freeaddrinfo(hints_list);
+
     close(master_listen_fd);
-
-
-
-
-
-    
     return EXIT_SUCCESS;
 }

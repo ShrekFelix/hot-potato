@@ -6,6 +6,23 @@
 #include <time.h>
 #include <sys/select.h>
 
+#define TOSS_PTT {\
+    send_int(out_fd, nhops);\
+    send_int(out_fd, trace_len);\
+    send_trace(out_fd, trace);\
+}
+#define SHUTDOWN {\
+    send_int(out_fd, -100);\
+    send_int(out_fd, trace_len);\
+    send_trace(out_fd, trace);\
+}
+#define CATCH_PTT {\
+    nhops = recv_int(in_fd);\
+    trace_len = recv_int(in_fd);\
+    recv_trace(in_fd, trace);\
+}
+
+
 int open_clientfd(const char *hostname, const char * port){
     int socket_fd;
     struct addrinfo hints;
@@ -14,7 +31,7 @@ int open_clientfd(const char *hostname, const char * port){
     hints.ai_family   = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     if (getaddrinfo(hostname, port, &hints, &hints_list) != 0) {
-        perror("cannot get address info");
+        perror("getaddrinfo()");
         return -1;
     }
     socket_fd = socket(
@@ -23,11 +40,11 @@ int open_clientfd(const char *hostname, const char * port){
         hints_list->ai_protocol
     );
     if (socket_fd == -1) {
-        perror("Error: cannot create socket");
+        perror("socket()");
         return -1;
     }
     if (connect(socket_fd, hints_list->ai_addr, hints_list->ai_addrlen) == -1){
-        perror("Error open clientfd\n");
+        perror("connect()\n");
         return -1;
     }
     return socket_fd;
@@ -43,7 +60,7 @@ int open_listenfd(const char * port){
     struct addrinfo *hints_list;
     const char *hostname = NULL;
     if (getaddrinfo(hostname, port, &hints, &hints_list) != 0) {
-        perror("cannot get address info");
+        perror("getaddrinfo()");
         return -1;
     }
     socket_fd = socket(
@@ -52,35 +69,24 @@ int open_listenfd(const char * port){
         hints_list->ai_protocol
     );
     if (socket_fd == -1) {
-        perror("Error: cannot create socket");
+        perror("socket()");
         return -1;
     }
     int yes = 1;
     if(setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) != 0){
-        perror("Error: setsockopt\n");
+        perror("setsockopt()");
         return -1;
     }
     if (bind(socket_fd, hints_list->ai_addr, hints_list->ai_addrlen) == -1) {
-        perror("Error: cannot bind socket: %s %d\n", hostname, port);
+        perror("bind()");
         return -1;
     }
     if (listen(socket_fd, 100) == -1) {
-        perror("listen\n"); 
+        perror("listen()"); 
         return -1; 
     }
     return socket_fd;
 }
-
-typedef struct _Trace{
-    struct _Trace* prev;
-    char* id;
-} Trace;
-
-typedef struct _Potato{
-    int nhops;
-    Trace * head;
-    Trace * tail;
-} Potato;
 
 void send_str(int fd, char * src){
     if(send(fd, src, 512, 0) != 512){
@@ -106,4 +112,16 @@ int recv_int(int fd){
         perror("Error receiving\n");
     }
     return i;
+}
+
+void send_trace(int fd, int trace[]){
+    if(send(fd, trace, 512*sizeof(int), 0) != 512*sizeof(int)){
+        perror("error sending trace");
+    }
+}
+
+void recv_trace(int fd, int trace[]){
+    if(recv(fd, trace, 512*sizeof(int), 0) != 512*sizeof(int)){
+        perror("error recving trace");
+    }
 }

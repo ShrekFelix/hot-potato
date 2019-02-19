@@ -28,7 +28,7 @@ int main(int argc, char *argv[]){
     }
     char player_addr[512];
     if(gethostname(player_addr, 512) != 0){
-        perror("Error: gethostname\n");
+        perror("gethostname()\n");
         return EXIT_FAILURE;
     }
     send_str(master_fd, player_addr);
@@ -50,12 +50,12 @@ int main(int argc, char *argv[]){
     struct sockaddr_storage socket_addr;
     socklen_t socket_addr_len = sizeof(socket_addr);
     int left_fd = open_clientfd(left_addr, left_port);
-    int left_conn_fd = accept(player_listen_fd, (struct sockaddr *)&socket_addr, &socket_addr_len);
-    int right_fd = open_clientfd(right_addr, right_port);
     int right_conn_fd = accept(player_listen_fd, (struct sockaddr *)&socket_addr, &socket_addr_len);
+    int right_fd = open_clientfd(right_addr, right_port);
+    int left_conn_fd = accept(player_listen_fd, (struct sockaddr *)&socket_addr, &socket_addr_len);
 
     // game start
-    srand((unsigned int) time(NULL));
+    srand((unsigned int) time(NULL) + id);
     int trace[512];
     int trace_len = 0;
     int nhops;
@@ -69,9 +69,9 @@ int main(int argc, char *argv[]){
         FD_SET(master_fd, &rd);
         FD_SET(left_fd, &rd);
         FD_SET(right_fd, &rd);
-        r = select(right_conn_fd+1, &rd, NULL, NULL, NULL);
+        r = select(left_conn_fd+1, &rd, NULL, NULL, NULL);
         if(r<0){
-            perror("Error: select\n");
+            perror("select()");
             return EXIT_FAILURE;
         }
         if(FD_ISSET(master_fd, &rd)){
@@ -82,13 +82,15 @@ int main(int argc, char *argv[]){
             assert(FD_ISSET(right_fd, &rd));
             in_fd = right_fd;
         }
-        nhops = recv_int(in_fd);
-        trace_len = recv_int(in_fd);
-        if(recv(in_fd, trace, 512*sizeof(int), 0) != 512*sizeof(int)) perror("error recving trace\n");
+        CATCH_PTT;
+        // nhops = recv_int(in_fd);
+        // trace_len = recv_int(in_fd);
+        // recv_trace(in_fd, trace);
+        nhops--;
+        trace[trace_len] = id;
+        trace_len++;
         if(nhops>0){
-            nhops--;
-            trace[trace_len] = id;
-            trace_len++;
+            // randomly choose a neigbour
             if(rand()%2){
                 out_fd = left_conn_fd;
                 out_id = id-1;
@@ -96,23 +98,26 @@ int main(int argc, char *argv[]){
                 out_fd = right_conn_fd;
                 out_id = id+1;
             }
+            // correct neigbour id
             if(out_id == nplayers) out_id = 0;
             else if(out_id < 0) out_id = nplayers-1;
+            // send potato to it
             printf("Sending potato to %d\n", out_id);
-            printf("nhops: %d\n", nhops);
-            send_int(out_fd, nhops);
-            send_int(out_fd, trace_len);
-            if(send(out_fd, trace, 512*sizeof(int), 0) != 512*sizeof(int)) perror("error sending trace\n");
+            TOSS_PTT;
+            // send_int(out_fd, nhops);
+            // send_int(out_fd, trace_len);
+            // send_trace(out_fd, trace);
         }else{
-            if(nhops == -513) break;
+            if(nhops <= -100 ) break; // game already over; this is the shutdown signal from the master
+            // game over
             printf("I’m it\n");
             out_fd = master_fd;
-            send_int(out_fd, trace_len);
-            if(send(out_fd, trace, 512*sizeof(int), 0) != 512*sizeof(int)) perror("error sending trace\n");
+            TOSS_PTT;
+            // send_int(out_fd, trace_len);
+            // send_trace(out_fd, trace);
             break;
         }
     }
-    //freeaddrinfo(master_hints_list);
     close(master_fd);
     close(player_listen_fd);
     close(left_fd);
