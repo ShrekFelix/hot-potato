@@ -90,38 +90,38 @@ int open_listenfd(const char * port){
 
 void send_str(int fd, char * src){
     if(send(fd, src, 512, 0) != 512){
-        perror("Error: send\n");
+        perror("send_str()");
     }
 }
 
 void recv_str(int fd, char * des){
     if(recv(fd, des, 512, 0) != 512){
-        perror("Error: receive\n");
+        perror("recv_str()");
     }
 }
 
 void send_int(int fd, int src){
     if(send(fd, &src, sizeof(int), 0) != sizeof(int)){
-        perror("Error sending %d\n", src);
+        perror("send_int()", src);
     }
 }
 
 int recv_int(int fd){
     int i;
     if(recv(fd, &i, sizeof(int), 0) != sizeof(int)){
-        perror("Error receiving\n");
+        perror("recv_int()");
     }
     return i;
 }
 
 void send_trace(int fd, int trace[]){
     if(send(fd, trace, 512*sizeof(int), 0) != 512*sizeof(int)){
-        perror("error sending trace");
+        perror("send_trace()");
     }
 }
 
 void recv_trace(int fd, int trace[]){
     if(recv(fd, trace, 512*sizeof(int), 0) != 512*sizeof(int)){
-        perror("error recving trace");
+        perror("recv_trace()");
     }
 }
