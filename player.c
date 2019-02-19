@@ -83,9 +83,6 @@ int main(int argc, char *argv[]){
             in_fd = right_fd;
         }
         CATCH_PTT;
-        // nhops = recv_int(in_fd);
-        // trace_len = recv_int(in_fd);
-        // recv_trace(in_fd, trace);
         nhops--;
         trace[trace_len] = id;
         trace_len++;
@@ -104,17 +101,12 @@ int main(int argc, char *argv[]){
             // send potato to it
             printf("Sending potato to %d\n", out_id);
             TOSS_PTT;
-            // send_int(out_fd, nhops);
-            // send_int(out_fd, trace_len);
-            // send_trace(out_fd, trace);
         }else{
             if(nhops <= -100 ) break; // game already over; this is the shutdown signal from the master
             // game over
             printf("I’m it\n");
             out_fd = master_fd;
             TOSS_PTT;
-            // send_int(out_fd, trace_len);
-            // send_trace(out_fd, trace);
             break;
         }
     }

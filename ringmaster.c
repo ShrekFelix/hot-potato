@@ -71,9 +71,6 @@ int main(int argc, char *argv[]){
         for(int i=0; i<nplayers; ++i){
             out_fd = player_conn_fds[i];
             SHUTDOWN;
-            // send_int(out_fd, -100);
-            // send_int(out_fd, trace_len);
-            // send_trace(out_fd, trace);
         }
         return EXIT_SUCCESS;
     }
@@ -82,9 +79,6 @@ int main(int argc, char *argv[]){
     printf("Ready to start the game, sending potato to player %d\n", randn);
     out_fd = player_conn_fds[randn];
     TOSS_PTT;
-    // send_int(out_fd, nhops);
-    // send_int(out_fd, trace_len);
-    // send_trace(out_fd, trace);
     FD_ZERO(&rd);
     for(int i=0; i<nplayers; ++i){
         FD_SET(player_conn_fds[i], &rd);
@@ -104,9 +98,6 @@ int main(int argc, char *argv[]){
             // signal others to shutdown
             out_fd = player_conn_fds[i];
             SHUTDOWN;
-            // send_int(out_fd, -100);
-            // send_int(out_fd, trace_len);
-            // send_trace(out_fd, trace);
         }
     }
     printf("Trace of potato:\n");
