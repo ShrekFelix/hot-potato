@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-ggdb3 -Wno-implicit-function-declaration
+CFLAGS=-ggdb3 -Wno-implicit-function-declaration -std=gnu99
 
 all: ringmaster player
 

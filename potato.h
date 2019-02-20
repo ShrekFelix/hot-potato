@@ -89,39 +89,39 @@ int open_listenfd(const char * port){
 }
 
 void send_str(int fd, char * src){
-    if(send(fd, src, 512, 0) != 512){
+    if(send(fd, src, 512, MSG_WAITALL) != 512){
         perror("send_str()");
     }
 }
 
 void recv_str(int fd, char * des){
-    if(recv(fd, des, 512, 0) != 512){
+    if(recv(fd, des, 512, MSG_WAITALL) != 512){
         perror("recv_str()");
     }
 }
 
 void send_int(int fd, int src){
-    if(send(fd, &src, sizeof(int), 0) != sizeof(int)){
+    if(send(fd, &src, sizeof(int), MSG_WAITALL) != sizeof(int)){
         perror("send_int()", src);
     }
 }
 
 int recv_int(int fd){
     int i;
-    if(recv(fd, &i, sizeof(int), 0) != sizeof(int)){
+    if(recv(fd, &i, sizeof(int), MSG_WAITALL) != sizeof(int)){
         perror("recv_int()");
     }
     return i;
 }
 
 void send_trace(int fd, int trace[]){
-    if(send(fd, trace, 512*sizeof(int), 0) != 512*sizeof(int)){
+    if(send(fd, trace, 512*sizeof(int), MSG_WAITALL) != 512*sizeof(int)){
         perror("send_trace()");
     }
 }
 
 void recv_trace(int fd, int trace[]){
-    if(recv(fd, trace, 512*sizeof(int), 0) != 512*sizeof(int)){
+    if(recv(fd, trace, 512*sizeof(int), MSG_WAITALL) != 512*sizeof(int)){
         perror("recv_trace()");
     }
 }
